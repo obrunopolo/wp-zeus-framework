@@ -1,0 +1,17 @@
+{
+    "autoload": {
+        "psr-4": {
+            "Zeus\\": "../src/"
+        },
+        "files": [
+            "../includes/Constants.php",
+            "../includes/Functions.php"
+        ]
+    },
+    "config": {
+        "vendor-dir": "../vendor"
+    },
+    "require": {
+        "masterminds/html5": "^2.7"
+    }
+}
