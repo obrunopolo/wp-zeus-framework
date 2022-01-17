@@ -8,6 +8,9 @@ use Zeus\Models\Extensions\Controller;
 class App implements Controller
 {
 
+    /** @var Assets */
+    public $assets;
+
     use \Zeus\Models\Extensions\Singleton;
 
     public function init()
@@ -19,7 +22,7 @@ class App implements Controller
     {
 
         // Instantiate controllers here
-        Assets::getInstance();
+        $this->assets = Assets::getInstance();
 
         // Create hooks here
         add_action('init', [$this, 'init']);
