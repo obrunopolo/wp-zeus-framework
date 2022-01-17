@@ -1,7 +1,7 @@
 
 # WP Zeus Framework
 
-** :construction: Project status is: under construction. **
+**:construction: Project status is: under construction. :construction:**
 
 The framework for WP plugin creators.
 
@@ -15,7 +15,7 @@ Features:
 
 ## To be implemented
 
- [ ] Project startup documentation
- [ ] Project deploy documentation
- [ ] Custom post types implementation + Documentation
- [ ] `wp-json` API implementation + Documentation
+ - [ ] Project startup documentation
+ - [ ] Project deploy documentation
+ - [ ] Custom post types implementation + Documentation
+ - [ ] `wp-json` API implementation + Documentation
