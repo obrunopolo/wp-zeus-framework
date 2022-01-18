@@ -4,13 +4,15 @@ namespace Zeus\Controllers;
 
 use Zeus\Models\Extensions\Controller;
 use Masterminds\HTML5;
+use Zeus\App;
+use Zeus\Models\Extensions\Singleton;
 
-class Assets implements Controller
+class Assets extends Singleton implements Controller
 {
 
-    use \Zeus\Models\Extensions\Singleton;
-
     const OPTION_JS_ENTRIES = "zeus_js_entries";
+    const OPTION_LAST_VERSION = "zeus_assets_last_version";
+
     const ASSETS_PREFIX = "zeus-";
 
     private function readFileDependencies($filename, &$array)
@@ -64,6 +66,9 @@ class Assets implements Controller
         }
 
         update_option(self::OPTION_JS_ENTRIES, $entries, true);
+        update_option(self::OPTION_LAST_VERSION, App::PLUGIN_VERSION, true);
+
+        echo "assets updated";
     }
 
     public function enqueueScripts()
@@ -100,8 +105,13 @@ class Assets implements Controller
         add_action("wp_enqueue_scripts", [$this, "enqueueScripts"]);
         add_action("zeus_deploy", [$this, "updateAssets"]);
 
-        if (ZEUS_DISABLE_AUTODEPLOY === false) {
-            do_action('zeus_deploy');
+        // echo "opt:" . get_option(self::OPTION_LAST_VERSION);
+        // echo "ver:" . zeus()->getVersion();
+
+
+
+        if (ZEUS_DISABLE_AUTODEPLOY === false && get_option(self::OPTION_LAST_VERSION) !== zeus()->getVersion()) {
+            do_action("zeus_deploy");
         }
     }
 }

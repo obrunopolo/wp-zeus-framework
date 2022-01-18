@@ -19,4 +19,4 @@ defined('ABSPATH') || exit;
 
 require_once "vendor/autoload.php";
 
-zeus();
+zeus()->run();

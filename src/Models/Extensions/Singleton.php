@@ -2,31 +2,67 @@
 
 namespace Zeus\Models\Extensions;
 
-trait Singleton
+use Zeus\App;
+
+/**
+ * Original Singleton class.
+ *
+ * @link https://www.polynique.com/coding/extending-singleton-in-php-to-avoid-boilerplate-code/
+ */
+abstract class Singleton
 {
 
-    private static $instance;
+    /**
+     * Any Singleton class.
+     *
+     * @var Singleton[] $instances
+     */
+    private static $instances = array();
 
+    /**
+     * Consctruct.
+     * Private to avoid "new".
+     */
     private function __construct()
     {
-        if (method_exists($this, 'run')) {
+        if ($this instanceof Controller) {
             $this->run();
         }
     }
 
+    /**
+     * Get Instance
+     *
+     * @return Singleton
+     */
+    public static function getInstance()
+    {
+
+        if (!isset($instances[static::class])) {
+            self::$instances[static::class] = new static();
+        }
+
+        return self::$instances[static::class];
+    }
+
+    /**
+     * Avoid clone instance
+     */
     private function __clone()
     {
     }
 
-    private function __wakeup()
+    /**
+     * Avoid serialize instance
+     */
+    private function __sleep()
     {
     }
 
-    public static function getInstance()
+    /**
+     * Avoid unserialize instance
+     */
+    private function __wakeup()
     {
-        if (!isset(static::$instance)) {
-            static::$instance = new static;
-        }
-        return static::$instance;
     }
 }
