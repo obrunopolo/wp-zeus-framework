@@ -2,10 +2,10 @@
 
 namespace Zeus\Controllers;
 
-use Zeus\Models\Extensions\Controller;
+use Zeus\Models\Controller;
 use Masterminds\HTML5;
 use Zeus\App;
-use Zeus\Models\Extensions\Singleton;
+use Zeus\Models\Singleton;
 
 class Assets extends Singleton implements Controller
 {
@@ -15,6 +15,13 @@ class Assets extends Singleton implements Controller
 
     const ASSETS_PREFIX = "zeus-";
 
+    /**
+     * Reads one entry from JS files and adds the load parameters to the `$array` variable.
+     *
+     * @param mixed $filename The entrypoint file name.
+     * @param mixed $array The array the entry should be added to.
+     * @return void
+     */
     private function readFileDependencies($filename, &$array)
     {
         [$file, $_extension] = explode(".", $filename);
@@ -54,6 +61,8 @@ class Assets extends Singleton implements Controller
     /**
      * Updates the file references for JavaScript built with Webpack.
      *
+     * Should be executed when JS has changed.
+     *
      * @return void
      */
     public function updateAssets()
@@ -73,13 +82,9 @@ class Assets extends Singleton implements Controller
 
     public function enqueueScripts()
     {
-        // Uncomment if you will use react
-
-        // wp_enqueue_script('react');
-        // wp_enqueue_script('react-dom');
 
         // Enqueues JavaScript built with Webpack
-        $entries = get_option(self::OPTION_JS_ENTRIES, []);
+        $entries = apply_filters("zeus_get_js_entries", get_option(self::OPTION_JS_ENTRIES, []));
 
         foreach ($entries as $name => $data) {
             foreach ($data["imports"] as $item) {
@@ -105,13 +110,10 @@ class Assets extends Singleton implements Controller
         add_action("wp_enqueue_scripts", [$this, "enqueueScripts"]);
         add_action("zeus_deploy", [$this, "updateAssets"]);
 
-        // echo "opt:" . get_option(self::OPTION_LAST_VERSION);
-        // echo "ver:" . zeus()->getVersion();
-
-
-
         if (ZEUS_DISABLE_AUTODEPLOY === false && get_option(self::OPTION_LAST_VERSION) !== zeus()->getVersion()) {
-            do_action("zeus_deploy");
+            add_action("shutdown", function () {
+                do_action("zeus_deploy");
+            });
         }
     }
 }

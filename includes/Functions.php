@@ -55,3 +55,16 @@ function is_production()
 {
     return ZEUS_ENV === "production";
 }
+
+
+function htmlAttrFromArray($attributes)
+{
+    $map_result = array_map(function ($key) use ($attributes) {
+        if (is_bool($attributes[$key])) {
+            return $attributes[$key] ? $key : '';
+        }
+        return $key . '="' . $attributes[$key] . '"';
+    }, array_keys($attributes));
+    $result = join(' ', $map_result);
+    return $result;
+}

@@ -6,22 +6,26 @@ use Error;
 use ReflectionClassConstant;
 use WP_Post;
 use WP_Query;
+use Zeus\Views\Components\Form;
+use Zeus\Views\Components\FormField;
 
 abstract class Post
 {
-    private $meta_updated = array();
+
+    static $objects = [];
+
+    private $meta_values = [];
+
+    private $meta_updated = [];
 
     private $meta_before;
 
-    /** @var array<string,array> */
-    static $empty_meta_query = array();
-
     public function __construct(int $id = 0)
     {
-        $this->meta_values = array();
+        $this->meta_values = [];
 
         if ($id > 0) {
-            $post_type = static::get_post_type();
+            $post_type = static::getPostType();
             if (get_post_type($id) !== $post_type) {
                 throw new Error('[CustomPostType] post ' . $id . ' is not ' . $post_type);
             }
@@ -43,67 +47,46 @@ abstract class Post
     }
 
     /**
-     * Compila os labels para o Wordpress durante o registro do post type.
+     * Fetches a post from the database.
      *
-     * @param mixed $plural Nome plural do post type
-     * @param mixed $singular Nome singular do post type
-     * @param string $x "o" para gênero masculino, "a" para gênero feminino
-     * @return array
+     * @param int $id
+     *
+     * @return static
      */
-    public static function compile_labels($plural, $singular, $x = "o")
+    static function get($id, ...$args)
     {
-        return [
-            'name' => $plural,
-            'singular_name' => $singular,
-            'add_new_item' => "Adicionar nov$x $singular",
-            'edit_item' => "Editar $singular",
-            'view_item' => "Visualizar $singular",
-            'view_items' => "Visualizar $plural",
-            'search_items' => "Buscar $plural",
-            'not_found' => "Não há nenhum" . (($x == 'o') ? '' : 'a') . " $singular.",
-            'not_found_in_trash' => "Nenhum" . (($x == 'o') ? '' : 'a') . " $singular encontrado na lixeira",
-            // 'parent_item_colon' => "Parent $singular",
-            'all_items' => "Tod" . $x . "s " . $x . "s $plural",
-            'archives' => "$plural",
-            'attributes' => "Atributos d$x $singular",
-            'insert_into_item' => "Inserir n$x $singular",
-            // 'uploaded_to_this_item' => "Upload ao $singular realizado",
-        ];
+        if (!isset(static::$objects[$id])) {
+            static::$objects[$id] = new static($id, ...$args);
+        }
+        return static::$objects[$id];
     }
 
     /**
-     * Cria um post no banco de dados e retorna o objeto `CustomPostType` correspondente.
+     * Create a post.
      *
-     * @param string $post_title Título do post
-     * @param array $meta_input Array com metadados do post
-     * @param string $post_status Status do post (padrão: publicado)
-     * @return static
+     * @param string $args The args to be passed to the post. See `wp_insert_post` documentation.
+     *
+     * @return static The `Post` instance
      */
-    public static function add(string $post_title, array $meta_input = [], string $post_status = 'publish', array $args = [])
+    public static function create(array $args = [])
     {
         $add = array_merge(
             $args,
             array(
-                'post_status' => $post_status,
-                'post_type' => static::get_post_type(),
-                'post_title' => $post_title,
-                'meta_input' => $meta_input
+                'post_type' => static::getPostType(),
             )
         );
         return static::get(wp_insert_post($add));
     }
 
     /**
-     * Salva os meta dados alterados do post.
+     * Saves post to database.
      *
      * @return void
      */
-    public function save_meta($create_note = true)
+    public function save()
     {
         if (isset($this->id)) {
-            // QueryContainer::insert_post_note($this->id, "Meta dados da lista de compra atualizados: " . print_r($this->, true));
-            $note = "Meta dados atualizados:";
-            $has_updates = false;
             foreach ($this->meta_updated as $meta_key) {
                 if (
                     !isset($this->meta_before[$meta_key]) || ($this->meta_before[$meta_key] != $this->meta_values[$meta_key])
@@ -112,26 +95,23 @@ abstract class Post
                         || !empty(array_diff($this->meta_before[$meta_key], $this->meta_values[$meta_key]))
                         || !empty(array_diff($this->meta_values[$meta_key], $this->meta_before[$meta_key])))
                 ) {
-                    $has_updates = true;
-                    $note .= "\n   {$meta_key}: " . print_r($this->meta_values[$meta_key], true);
+
                     update_post_meta($this->id, $meta_key, $this->meta_values[$meta_key]);
                 }
             }
-            if ($create_note && $has_updates) {
-                Database::insert_post_note($this->id, $note);
-            }
-            $this->meta_updated = array();
+
+            $this->meta_updated = [];
 
             $this->meta_before = $this->meta_values;
         }
     }
 
     /**
-     * Retorna o WP_Post correspondente.
+     * Gets `WP_Post` object.
      *
      * @return WP_Post
      */
-    public function get_post(): WP_Post
+    public function getWpPost(): WP_Post
     {
         if (!isset($this->post)) {
             $this->post = get_post($this->id);
@@ -140,12 +120,12 @@ abstract class Post
     }
 
     /**
-     * Obtém um meta_value do post. Retorna `null` caso o meta_key não exista.
+     * Gets post meta data by key. Return null if key does not exist.
      *
-     * @param string|null $key meta_key que deseja. Caso não seja informado, retornará um array com todos os metadados.
+     * @param string|null $key Key to be retrieved. If ommited, returns an array containing all meta data.
      * @return mixed|null
      */
-    public function get_meta(string $key = null)
+    public function getMeta(string $key = null)
     {
         if (is_null($key)) {
             return $this->meta_values;
@@ -158,52 +138,57 @@ abstract class Post
     }
 
     /**
-     * Adiciona uma alteração nos metadados do post.
+     * Updates meta data. You need to call `save` method or set `$save_immediately`
+     * argument to true to persist changes.
      *
-     * @param string $key meta_key a ser alterado
-     * @param mixed $value meta_value
-     * @param bool $save_immediately Se deve armazenar imediatamente no banco de dados. Para salvar posteriormente, utilize `->save_meta()`.
+     * @param string $key Meta key to be updated
+     * @param mixed $value The value
+     * @param bool $save_immediately Set it to true to save changes afterwards.
      * @return void
      */
-    public function update_meta(string $key, $value, $save_immediately = false)
+    public function updateMeta(string $key, $value, $save_immediately = false)
     {
         $this->meta_values[$key] = $value;
         if (!in_array($key, $this->meta_updated)) {
             $this->meta_updated[] = $key;
         }
         if ($save_immediately) {
-            $this->save_meta();
+            $this->save();
         }
     }
 
     /**
-     * Verifica se o post tem alterações pendentes.
+     * Returns true if post has pending changes.
      *
      * @return bool
      */
-    public function has_unsaved_changes()
+    public function hasChanges()
     {
         return count($this->meta_updated) > 0;
     }
 
     /**
-     * Obtém o ID do post.
+     * Gets post ID.
      *
      * @return mixed
      */
-    public function get_id()
+    public function getId()
     {
         return $this->id;
     }
 
 
     /**
-     * Função para gerar o register_post_type no WP de acordo com o Custom Post Type.
-     * Deverá executar a função do wordpress `register_post_type`.
+     * Register post type.
+     *
+     * This function should be implemented by child class and call
+     * `register_post_type` inside its body.
+     *
+     * Is executed during `register_post_types` hook.
      *
      * @return void
      */
-    abstract static function register_post_type();
+    abstract static function registerPostType();
 
     /**
      * Função executada ao salvar o post no painel admin.
@@ -211,70 +196,37 @@ abstract class Post
      * @param mixed $post_id
      * @return mixed
      */
-    abstract static function on_post_save($post_id);
-
-    /**
-     * Renderiza o metabox.
-     *
-     * @deprecated
-     *
-     * @return void
-     */
-    public static function render_metabox()
+    public static function onPostSave($post_id)
     {
-        $class = array_reverse(explode('\\', get_class(new static())))[0];
-        call_user_func(array('Oinb\\PostTypes\\Views\\' . $class, 'render'));
+        // to implement in child class
     }
 
-    /**
-     * Registra o metabox.
-     *
-     * @deprecated
-     *
-     * @return void
-     */
-    public static function register_metabox()
-    {
-        add_meta_box(
-            static::get_post_type() . '_add_fields',
-            __('Meta dados'),
-            array(static::class, 'render_metabox'),
-            static::get_post_type()
-        );
-    }
 
-    /**
-     * Consulta as classes em `Oinb\PostTypes` e executa individualmente a função `register_post_type`
-     * de cada post-type.
-     *
-     * @return void
-     * @throws Exception
-     */
-    public static function register_post_types()
-    {
-        $classes = ClassFinder::getClassesInNamespace('Oinb\\PostTypes');
+    // public static function register_post_types()
+    // {
+    //     $classes = ClassFinder::getClassesInNamespace('Oinb\\PostTypes');
 
-        foreach ($classes as $class) {
-            call_user_func(array($class, 'register_post_type'));
-            $post_type = constant($class . '::POST_TYPE');
-            add_action('save_post_' . $post_type, array($class, 'on_post_save'));
-        }
+    //     foreach ($classes as $class) {
+    //         call_user_func(array($class, 'register_post_type'));
+    //         $post_type = constant($class . '::POST_TYPE');
+    //         add_action('save_post_' . $post_type, array($class, 'on_post_save'));
+    //     }
 
-        // print_r($classes);
-    }
+    //     // print_r($classes);
+    // }
 
 
     /**
      * Obtém os dados do item em formato array.
      * @return array
      */
-    public function get_data()
+    public function getData()
     {
-        $post = $this->get_post();
+        $post = $this->getWpPost();
         $data = (array)$post;
 
         $return = array(
-            "meta_data" => $this->get_meta()
+            "meta_data" => $this->getMeta()
         );
 
         foreach ($data as $key => $value) {
@@ -288,12 +240,12 @@ abstract class Post
         return $return;
     }
 
-    public function get_changed_meta()
+    public function getUnsavedChanges()
     {
         return $this->meta_updated;
     }
 
-    public static function get_post_type()
+    public static function getPostType()
     {
         try {
             $post_type = new ReflectionClassConstant(static::class, 'POST_TYPE');
@@ -303,16 +255,16 @@ abstract class Post
         }
     }
 
-    public static function get_archive_link()
+    public static function getArchiveLink()
     {
-        return get_post_type_archive_link(static::get_post_type());
+        return get_post_type_archive_link(static::getPostType());
     }
     /**
      * Obtém os campos do PostType
      *
      * @return FormField[]
      */
-    public static function get_fields()
+    public static function getFields()
     {
         try {
             $post_fields = new ReflectionClassConstant(static::class, 'POST_FIELDS');
@@ -320,13 +272,13 @@ abstract class Post
                 return new FormField($post_field_args);
             }, $post_fields->getValue());
         } catch (\Throwable $th) {
-            return array();
+            return [];
         }
     }
 
-    function create_form()
+    function createForm()
     {
-        return new Form(self::get_fields(), $this->get_meta());
+        return new Form(self::getFields(), $this->getMeta());
     }
 
     /**
@@ -337,12 +289,12 @@ abstract class Post
      * @param mixed $args
      * @return array<static>
      */
-    public static function wp_query($args = array(), ...$post_type_args)
+    public static function wpQuery($args = [], ...$post_type_args)
     {
 
         $original_global_post = $GLOBALS['post'];
 
-        $post_type = static::get_post_type();
+        $post_type = static::getPostType();
         $args = array_merge(
             array(
                 'posts_per_page' => -1,
@@ -368,34 +320,34 @@ abstract class Post
         return $map;
     }
 
-    static function get_items_as_options($query = array())
+    static function getAsHtmlOptions($query = [])
     {
-        $items = static::wp_query($query);
+        $items = static::wpQuery($query);
 
         return array_map(function (self $item) {
-            $post_type = static::get_post_type();
-            return apply_filters("oinb_{$post_type}_get_items_as_options", array(
-                'value' => $item->get_id(),
-                'label' => $item->get_post()->post_title
+            $post_type = static::getPostType();
+            return apply_filters("zeus_{$post_type}_get_items_as_options", array(
+                'value' => $item->getId(),
+                'label' => $item->getWpPost()->post_title
             ));
         }, $items);
     }
 
-    static function register_fields_metabox()
+    static function registerFieldsMetabox()
     {
         add_action('admin_menu', function () {
-            remove_meta_box('postcustom', static::get_post_type(), 'normal'); //removes custom fields for page
-            remove_meta_box('commentstatusdiv', static::get_post_type(), 'normal'); //removes comments status for page
-            remove_meta_box('commentsdiv', static::get_post_type(), 'normal'); //removes comments for page
-            remove_meta_box('authordiv', static::get_post_type(), 'normal'); //removes author for page
+            remove_meta_box('postcustom', static::getPostType(), 'normal'); //removes custom fields for page
+            remove_meta_box('commentstatusdiv', static::getPostType(), 'normal'); //removes comments status for page
+            remove_meta_box('commentsdiv', static::getPostType(), 'normal'); //removes comments for page
+            remove_meta_box('authordiv', static::getPostType(), 'normal'); //removes author for page
         });
         add_action('add_meta_boxes', function () {
-            add_meta_box(static::get_post_type() . '_add_fields', "Campos de " . static::get_post_type(), function () {
+            add_meta_box(static::getPostType() . '_add_fields', "Campos de " . static::getPostType(), function () {
                 $item = static::get(get_the_ID());
-                $item->create_form()->render();
-            }, static::get_post_type());
+                $item->createForm()->render();
+            }, static::getPostType());
         });
-        add_action('save_post_' . static::get_post_type(), function ($post_id) {
+        add_action('save_post_' . static::getPostType(), function ($post_id) {
             if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
                 return;
             }
@@ -404,8 +356,8 @@ abstract class Post
             }
             /** @var string[] */
             $fields = array_map(function (FormField $field) {
-                return $field->get_name();
-            }, static::get_fields());
+                return $field->getName();
+            }, static::getFields());
 
             $item = static::get($post_id);
             foreach ($fields as $field) {
@@ -416,21 +368,21 @@ abstract class Post
                     } else {
                         $sanitize_post_field = sanitize_text_field($_POST[$field]);
                     }
-                    $item->update_meta($field, $sanitize_post_field);
+                    $item->updateMeta($field, $sanitize_post_field);
                     //update_post_meta($post_id, $field, $sanitize_post_field);
                 }
             }
-            $item->save_meta();
+            $item->save();
         });
     }
 
-    static function register_post_status($slug, $label, $icon = "info-outline")
+    static function registerPostStatus($slug, $label, $icon = "info-outline")
     {
         register_post_status("oinb-$slug", array(
             'label'                     => $label,
             'label_count'               => _n_noop($label . ' <span class="count">(%s)</span>', $label . ' <span class="count">(%s)</span>', 'plugin-domain'),
             'public'                    => true,
-            'post_type'                 => array(static::get_post_type()), // Define one or more post types the status can be applied to.
+            'post_type'                 => array(static::getPostType()), // Define one or more post types the status can be applied to.
             'show_in_admin_all_list'    => true,
             'show_in_admin_status_list' => true,
             'show_in_metabox_dropdown'  => true,
@@ -439,24 +391,24 @@ abstract class Post
         ));
     }
 
-    function update_status($status)
+    function updateStatus($status)
     {
         wp_update_post(array(
             'post_status' => "oinb-$status",
-            'ID' => $this->get_id()
+            'ID' => $this->getId()
         ));
     }
 
-    function get_post_status()
+    function getPostStatus()
     {
-        return $this->get_post()->post_status;
+        return $this->getWpPost()->post_status;
     }
 
-    function get_status()
+    function getStatus()
     {
-        $status = $this->get_post_status();
+        $status = $this->getPostStatus();
         if (function_exists('wp_statuses_get')) {
-            $status = wp_statuses_get($status)->label;
+            $status = call_user_func('wp_statuses_get', $status)->label;
         }
         return $status;
     }

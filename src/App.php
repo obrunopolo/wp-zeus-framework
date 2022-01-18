@@ -3,8 +3,7 @@
 namespace Zeus;
 
 use Zeus\Controllers\Assets;
-use Zeus\Models\Extensions\Controller;
-use Zeus\Models\Extensions\Singleton;
+use Zeus\Models\Singleton;
 
 class App extends Singleton
 {
@@ -17,7 +16,6 @@ class App extends Singleton
     /** @var Assets */
     public $assets;
 
-    // use \Zeus\Models\Extensions\Singleton;
 
     public function init()
     {

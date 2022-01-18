@@ -1,6 +1,6 @@
 <?php
 
-namespace Zeus\Models\Extensions;
+namespace Zeus\Models;
 
 use Zeus\App;
 

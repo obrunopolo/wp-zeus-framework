@@ -1,6 +1,6 @@
 <?php
 
-namespace Zeus\Models\Extensions;
+namespace Zeus\Models;
 
 interface Controller
 {
