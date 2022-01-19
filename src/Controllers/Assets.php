@@ -76,8 +76,6 @@ class Assets extends Singleton implements Controller
 
         update_option(self::OPTION_JS_ENTRIES, $entries, true);
         update_option(self::OPTION_LAST_VERSION, App::PLUGIN_VERSION, true);
-
-        echo "assets updated";
     }
 
     public function enqueueScripts()
@@ -105,7 +103,7 @@ class Assets extends Singleton implements Controller
     {
 
         // Determine when JS should be loaded.
-        add_action("zeus_enqueues_helloworld", "__return_true");
+        add_filter("zeus_enqueues_helloworld", "__return_true");
 
         add_action("wp_enqueue_scripts", [$this, "enqueueScripts"]);
         add_action("zeus_deploy", [$this, "updateAssets"]);
