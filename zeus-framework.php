@@ -8,7 +8,7 @@
  * Author: Bruno Polo
  * Author URI: https://brunopolo.com.br
  * Text Domain: zeus-framework
- * Domain Path: /i18n/languages/
+ * Domain Path: /languages
  * Requires at least: 5.5
  * Requires PHP: 7.0
  *

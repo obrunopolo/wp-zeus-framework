@@ -110,7 +110,7 @@ class FormField extends Component
             unset($props['value']);
 
             return '<div style="display: flex; align-items: center;">' .
-                '<input ' . htmlAttrFromArray($props) . ' />' .
+                '<input ' . get_html_element_attr($props) . ' />' .
                 '<label for="' . $this->props['id'] . '">' . $this->label . ':</label>' .
                 '</div>';
         }
@@ -132,14 +132,14 @@ class FormField extends Component
 
             return '
             <label for="' . $this->props['id'] . '">' . $this->label . ':</label>
-            <select ' . htmlAttrFromArray($this->props) . '>
+            <select ' . get_html_element_attr($this->props) . '>
           ' . implode(array_map(function ($option) use ($selected) {
                 // echo "$selected vs " . $option['value'];
                 if ($selected == $option['value']) {
                     $option['selected'] = true;
                 }
 
-                $option_attr = htmlAttrFromArray($option);
+                $option_attr = get_html_element_attr($option);
 
                 // print_r($option);
                 return "<option {$option_attr}></option>";
@@ -154,6 +154,6 @@ class FormField extends Component
         }
         return '
         <label for="' . $this->props['id'] . '">' . $this->label . ':</label>
-        <input ' . htmlAttrFromArray($this->props) . ' />';
+        <input ' . get_html_element_attr($this->props) . ' />';
     }
 }

@@ -2,8 +2,6 @@
 
 namespace Zeus\Models;
 
-use Zeus\App;
-
 /**
  * Original Singleton class.
  *

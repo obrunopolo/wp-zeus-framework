@@ -87,7 +87,7 @@ abstract class Post
      * This function should be implemented by child class and call
      * `register_post_type` inside its body.
      *
-     * Is executed during `register_post_types` hook.
+     * Is executed during `zeus_register_post_types` hook.
      *
      * @return void
      */

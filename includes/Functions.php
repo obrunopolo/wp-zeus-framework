@@ -7,7 +7,7 @@ use Zeus\App;
 /**
  * Returns the instance of `\Zeus\App` class.
  *
- * Is the entry point to access the plugin funcionalities.
+ * Is the entry point to access the plugin functionalities.
  *
  * @return App
  */
@@ -56,8 +56,16 @@ function is_production()
     return ZEUS_ENV === "production";
 }
 
-
-function htmlAttrFromArray($attributes)
+/**
+ * Accepts an array and convert to HTML attributes.
+ *
+ * Converts an array to a string that could be parsed
+ * inside a html tag.
+ *
+ * @param array $attributes
+ * @return string
+ */
+function get_html_element_attr($attributes)
 {
     $map_result = array_map(function ($key) use ($attributes) {
         if (is_bool($attributes[$key])) {

@@ -87,14 +87,14 @@ class Assets extends Singleton implements Controller
         $entries = apply_filters("zeus_get_js_entries", get_option(self::OPTION_JS_ENTRIES, []));
 
         foreach ($entries as $name => $data) {
-            foreach ($data["imports"] as $item) {
-                if (is_dev()) {
-                    $path = $item;
-                    $version = false;
-                } else {
-                    [$path, $version] = explode("?ver=", $item);
-                }
-                if (apply_filters("zeus_enqueues_{$name}", true)) {
+            if (true === apply_filters("zeus_enqueues_{$name}", true)) {
+                foreach ($data["imports"] as $item) {
+                    if (is_dev()) {
+                        $path = $item;
+                        $version = false;
+                    } else {
+                        [$path, $version] = explode("?ver=", $item);
+                    }
                     wp_enqueue_script(self::ASSETS_PREFIX . $name, $path, [], $version);
                 }
             }

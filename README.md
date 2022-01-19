@@ -60,7 +60,7 @@ The project is intended to be flexible to the developer, but also suggests usage
 
 ### Creating simple functionality
 
-To encapsulate functionalities, we must have a `Controller` class that has a defined scope. For this simple example, let's say we need to add a greeting to the current user, when logged in, in the single post page, before the post content.
+To encapsulate functionalities, we must have a `Controller` class that has a defined scope. For this example, let's say we need to add a greeting to the current user, when logged in, in the single post page, before the post content.
 
 This could be achieved if we had a `User` controller, using the filter `the_content`, like this:
 
@@ -71,11 +71,12 @@ This could be achieved if we had a `User` controller, using the filter `the_cont
 namespace Zeus\Controllers;
 
 use Zeus\Models\Extensions\Controller;
+use Zeus\Models\Extensions\Singleton;
 
-class User implements Controller
+class User extends Singleton implements Controller
 {
 
-    use \Zeus\Models\Extensions\Singleton;
+
 
     function filterPostContent($content) {
         $greeting = "";
@@ -103,9 +104,8 @@ Then, add the new controller to the main `App` class:
 namespace Zeus;
 
 use Zeus\Controllers\User;
-use Zeus\Models\Extensions\Controller;
 
-class App implements Controller
+class App
 {
     // {{...}}
 

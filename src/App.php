@@ -21,12 +21,13 @@ class App extends Singleton
         return self::PLUGIN_VERSION;
     }
 
+
     public function init()
     {
-        $this->registerPostTypes();
+        do_action('zeus_register_post_types');
     }
 
-    private function registerPostTypes()
+    public function registerPostTypes()
     {
         // Add post classes to this array.
         $post_types = [];
@@ -41,11 +42,8 @@ class App extends Singleton
         foreach ($classes as $class) {
             call_user_func([$class, 'registerPostType']);
             $post_type = constant($class . '::POST_TYPE');
-            add_action('save_post_' . $post_type, [$class, 'on_post_save']);
+            add_action('save_post_' . $post_type, [$class, 'onPostSave']);
         }
-
-        // print_r($classes);
-
     }
 
     public function run()
@@ -61,6 +59,7 @@ class App extends Singleton
 
         // Create hooks here
         add_action('init', [$this, 'init']);
+        add_action('zeus_register_post_types', [$this, 'registerPostTypes']);
 
         $this->run_complete = true;
     }
