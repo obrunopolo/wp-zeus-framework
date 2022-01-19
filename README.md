@@ -10,9 +10,14 @@ Features:
  * PSR-4.
  * Extend your code using `composer` to install and manage PHP dependencies.
  * Use TypeScript or JavaScript to create front end scripts.
- * Use ES6 and export as you like.
  * Use `npm` to install packages and extend front end functionalities.
  * Enjoy `webpack` optimized build for production.
+
+## Pre requisites
+
+ - A Wordpress installation
+ - [Composer](https://getcomposer.org/) installed
+ - Node.JS and npm installed (LTS recommended)
 
 ## Task list
 
@@ -22,7 +27,7 @@ Features:
  - [ ] Project deploy documentation
  - [ ] JavaScript/TypeScript development documentation
  - [ ] Composer usage documentation
- - [ ] Custom post types implementation + Documentation
+ - [x] Custom post types implementation + Documentation
  - [ ] `wp-json` API implementation + Documentation
  - [ ] React usage documentation
  - [ ] Sass (.scss) support + documentation
@@ -126,3 +131,7 @@ class App
 ```
 
 Now you should see the greeting, if logged in.
+
+## Continue creating
+
+ - [Create and manage new post types](__docs__/post.md)

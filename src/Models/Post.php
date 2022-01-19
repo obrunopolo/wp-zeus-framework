@@ -81,6 +81,14 @@ abstract class Post
         return static::get(wp_insert_post($add));
     }
 
+    public static function delete($id, $force_delete = false)
+    {
+        if (get_post_type($id) !== static::getPostType()) {
+            throw new Error('[CustomPostType] post ' . $id . ' is not ' . static::getPostType());
+        }
+        return wp_delete_post($id, $force_delete);
+    }
+
     /**
      * Register post type.
      *
@@ -438,8 +446,13 @@ abstract class Post
      */
     function updateStatus($status)
     {
+        $prefix = "";
+        // Check if not wp default status
+        if (!in_array($status, ["publish", "draft", "trash"])) {
+            $prefix = self::CPT_STATUS_PREFIX;
+        }
         wp_update_post(array(
-            'post_status' => self::CPT_STATUS_PREFIX . $status,
+            'post_status' => $prefix . $status,
             'ID' => $this->getId()
         ));
     }
