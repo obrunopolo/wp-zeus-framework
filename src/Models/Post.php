@@ -12,6 +12,8 @@ use Zeus\Views\Components\FormField;
 abstract class Post
 {
 
+    const CPT_STATUS_PREFIX = "zeus-";
+
     static $objects = [];
 
     private $meta_values = [];
@@ -77,6 +79,211 @@ abstract class Post
             )
         );
         return static::get(wp_insert_post($add));
+    }
+
+    /**
+     * Register post type.
+     *
+     * This function should be implemented by child class and call
+     * `register_post_type` inside its body.
+     *
+     * Is executed during `register_post_types` hook.
+     *
+     * @return void
+     */
+    abstract static function registerPostType();
+
+    /**
+     * This function hooks to the post save on admin panel, and should be
+     * overriden by the child class if a custom interface is provided.
+     *
+     * @param mixed $post_id
+     * @return mixed
+     */
+    public static function onPostSave($post_id)
+    {
+        // to implement in child class
+    }
+
+
+    /**
+     * Gets post_type value for this class.
+     *
+     * @return mixed
+     */
+    public static function getPostType()
+    {
+        try {
+            $post_type = new ReflectionClassConstant(static::class, 'POST_TYPE');
+            return $post_type->getValue();
+        } catch (\Throwable $th) {
+            return '';
+        }
+    }
+
+    /**
+     * Gets archive link for post type.
+     *
+     * @return string|false
+     */
+    public static function getArchiveLink()
+    {
+        return get_post_type_archive_link(static::getPostType());
+    }
+
+    /**
+     * Gets post form fields, if provided.
+     *
+     * @return FormField[]
+     */
+    public static function getFields()
+    {
+        try {
+            $post_fields = new ReflectionClassConstant(static::class, 'POST_FIELDS');
+            return array_map(function ($post_field_args) {
+                return new FormField($post_field_args);
+            }, $post_fields->getValue());
+        } catch (\Throwable $th) {
+            return [];
+        }
+    }
+    /**
+     * Runs WP_Query for this post type. It does not require
+     * to inform 'post_type' field, cleans the global object
+     * and runs `wp_reset_query` after the query is completed.
+     *
+     * @param mixed $args
+     * @return array<static> Array of `Post` objects.
+     */
+    public static function wpQuery($args = [], ...$post_type_args)
+    {
+
+        $original_global_post = $GLOBALS['post'];
+
+        $post_type = static::getPostType();
+        $args = array_merge(
+            array(
+                'posts_per_page' => -1,
+            ),
+            $args,
+            array(
+                'post_type' => $post_type,
+                'fields' => 'ids'
+            )
+        );
+
+        $query = new WP_Query($args);
+
+        $map = array_map(function ($id) use ($post_type_args) {
+            return static::get($id, ...$post_type_args);
+        }, $query->get_posts());
+
+        // wp_reset_query();
+        wp_reset_postdata();
+
+        setup_postdata($GLOBALS['post'] = &$original_global_post);
+
+        return $map;
+    }
+
+    /**
+     * Runs a WP_query and returns the results as an
+     * array of items with `value` and `label`.
+     *
+     * Should be used to create `<option>` html objects.
+     *
+     * @param array $query
+     * @return static[]
+     */
+    static function getAsHtmlOptions($query = [])
+    {
+        $items = static::wpQuery($query);
+
+        return array_map(function (self $item) {
+            $post_type = static::getPostType();
+            return apply_filters("zeus_{$post_type}_get_items_as_options", array(
+                'value' => $item->getId(),
+                'label' => $item->getWpPost()->post_title
+            ));
+        }, $items);
+    }
+
+    /**
+     * Registers meta box in admin area, to render
+     * the contents of `POST_FIELDS` constant as a
+     * form.
+     *
+     * Should be called inside `registerPostType` method if
+     * `POST_FIELDS` is provided.
+     *
+     * @return void
+     */
+    static function registerFieldsMetabox()
+    {
+        add_action('admin_menu', function () {
+            remove_meta_box('postcustom', static::getPostType(), 'normal'); //removes custom fields for page
+            remove_meta_box('commentstatusdiv', static::getPostType(), 'normal'); //removes comments status for page
+            remove_meta_box('commentsdiv', static::getPostType(), 'normal'); //removes comments for page
+            remove_meta_box('authordiv', static::getPostType(), 'normal'); //removes author for page
+        });
+        add_action('add_meta_boxes', function () {
+            add_meta_box(static::getPostType() . '_add_fields', "Campos de " . static::getPostType(), function () {
+                $item = static::get(get_the_ID());
+                $item->createForm()->render();
+            }, static::getPostType());
+        });
+        add_action('save_post_' . static::getPostType(), function ($post_id) {
+            if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+                return;
+            }
+            if ($parent_id = wp_is_post_revision($post_id)) {
+                $post_id = $parent_id;
+            }
+            /** @var string[] */
+            $fields = array_map(function (FormField $field) {
+                return $field->getName();
+            }, static::getFields());
+
+            $item = static::get($post_id);
+            foreach ($fields as $field) {
+                if (array_key_exists($field, $_POST)) {
+                    // Verifica se tem campo Array ou não e aplica o sanitize correto
+                    if (is_array($_POST[$field])) {
+                        $sanitize_post_field = filter_var_array($_POST[$field], FILTER_VALIDATE_INT);
+                    } else {
+                        $sanitize_post_field = sanitize_text_field($_POST[$field]);
+                    }
+                    $item->updateMeta($field, $sanitize_post_field);
+                    //update_post_meta($post_id, $field, $sanitize_post_field);
+                }
+            }
+            $item->save();
+        });
+    }
+
+    /**
+     * Registers a post status for the post type.
+     *
+     * Should be called inside `registerPostType` method.
+     *
+     * @param mixed $slug The post status slug, without the prefix.
+     * @param mixed $label The name of the status to be displayed.
+     * @param string $icon The icon used on the status. See dashicons library for more information.
+     * @return void
+     */
+    static function registerPostStatus($slug, $label, $icon = "info-outline")
+    {
+        register_post_status(self::CPT_STATUS_PREFIX . $slug, array(
+            'label'                     => $label,
+            'label_count'               => _n_noop($label . ' <span class="count">(%s)</span>', $label . ' <span class="count">(%s)</span>', 'plugin-domain'),
+            'public'                    => true,
+            'post_type'                 => array(static::getPostType()), // Define one or more post types the status can be applied to.
+            'show_in_admin_all_list'    => true,
+            'show_in_admin_status_list' => true,
+            'show_in_metabox_dropdown'  => true,
+            'show_in_inline_dropdown'   => true,
+            'dashicon' => "dashicons-$icon"
+        ));
     }
 
     /**
@@ -177,47 +384,9 @@ abstract class Post
         return $this->id;
     }
 
-
     /**
-     * Register post type.
+     * Gets an array with post data.
      *
-     * This function should be implemented by child class and call
-     * `register_post_type` inside its body.
-     *
-     * Is executed during `register_post_types` hook.
-     *
-     * @return void
-     */
-    abstract static function registerPostType();
-
-    /**
-     * Função executada ao salvar o post no painel admin.
-     *
-     * @param mixed $post_id
-     * @return mixed
-     */
-    public static function onPostSave($post_id)
-    {
-        // to implement in child class
-    }
-
-
-    // public static function register_post_types()
-    // {
-    //     $classes = ClassFinder::getClassesInNamespace('Oinb\\PostTypes');
-
-    //     foreach ($classes as $class) {
-    //         call_user_func(array($class, 'register_post_type'));
-    //         $post_type = constant($class . '::POST_TYPE');
-    //         add_action('save_post_' . $post_type, array($class, 'on_post_save'));
-    //     }
-
-    //     // print_r($classes);
-    // }
-
-
-    /**
-     * Obtém os dados do item em formato array.
      * @return array
      */
     public function getData()
@@ -240,173 +409,59 @@ abstract class Post
         return $return;
     }
 
+    /**
+     * Gets all items updated, but not saved.
+     *
+     * @return array
+     */
     public function getUnsavedChanges()
     {
         return $this->meta_updated;
     }
 
-    public static function getPostType()
-    {
-        try {
-            $post_type = new ReflectionClassConstant(static::class, 'POST_TYPE');
-            return $post_type->getValue();
-        } catch (\Throwable $th) {
-            return '';
-        }
-    }
-
-    public static function getArchiveLink()
-    {
-        return get_post_type_archive_link(static::getPostType());
-    }
     /**
-     * Obtém os campos do PostType
+     * Creates a form with the fields of post type and the values of the post instance.
      *
-     * @return FormField[]
+     * @return Form
      */
-    public static function getFields()
-    {
-        try {
-            $post_fields = new ReflectionClassConstant(static::class, 'POST_FIELDS');
-            return array_map(function ($post_field_args) {
-                return new FormField($post_field_args);
-            }, $post_fields->getValue());
-        } catch (\Throwable $th) {
-            return [];
-        }
-    }
-
     function createForm()
     {
         return new Form(self::getFields(), $this->getMeta());
     }
 
+
     /**
-     * Performa uma WP_Query e retorna o array de objetos CPT.
-     * A função toma conta de informar o parâmetro 'post_type' e
-     * também executa `wp_reset_query()`.
+     * Updates the post status.
      *
-     * @param mixed $args
-     * @return array<static>
+     * @param mixed $status
+     * @return void
      */
-    public static function wpQuery($args = [], ...$post_type_args)
-    {
-
-        $original_global_post = $GLOBALS['post'];
-
-        $post_type = static::getPostType();
-        $args = array_merge(
-            array(
-                'posts_per_page' => -1,
-            ),
-            $args,
-            array(
-                'post_type' => $post_type,
-                'fields' => 'ids'
-            )
-        );
-
-        $query = new WP_Query($args);
-
-        $map = array_map(function ($id) use ($post_type_args) {
-            return static::get($id, ...$post_type_args);
-        }, $query->get_posts());
-
-        // wp_reset_query();
-        wp_reset_postdata();
-
-        setup_postdata($GLOBALS['post'] = &$original_global_post);
-
-        return $map;
-    }
-
-    static function getAsHtmlOptions($query = [])
-    {
-        $items = static::wpQuery($query);
-
-        return array_map(function (self $item) {
-            $post_type = static::getPostType();
-            return apply_filters("zeus_{$post_type}_get_items_as_options", array(
-                'value' => $item->getId(),
-                'label' => $item->getWpPost()->post_title
-            ));
-        }, $items);
-    }
-
-    static function registerFieldsMetabox()
-    {
-        add_action('admin_menu', function () {
-            remove_meta_box('postcustom', static::getPostType(), 'normal'); //removes custom fields for page
-            remove_meta_box('commentstatusdiv', static::getPostType(), 'normal'); //removes comments status for page
-            remove_meta_box('commentsdiv', static::getPostType(), 'normal'); //removes comments for page
-            remove_meta_box('authordiv', static::getPostType(), 'normal'); //removes author for page
-        });
-        add_action('add_meta_boxes', function () {
-            add_meta_box(static::getPostType() . '_add_fields', "Campos de " . static::getPostType(), function () {
-                $item = static::get(get_the_ID());
-                $item->createForm()->render();
-            }, static::getPostType());
-        });
-        add_action('save_post_' . static::getPostType(), function ($post_id) {
-            if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-                return;
-            }
-            if ($parent_id = wp_is_post_revision($post_id)) {
-                $post_id = $parent_id;
-            }
-            /** @var string[] */
-            $fields = array_map(function (FormField $field) {
-                return $field->getName();
-            }, static::getFields());
-
-            $item = static::get($post_id);
-            foreach ($fields as $field) {
-                if (array_key_exists($field, $_POST)) {
-                    // Verifica se tem campo Array ou não e aplica o sanitize correto
-                    if (is_array($_POST[$field])) {
-                        $sanitize_post_field = filter_var_array($_POST[$field], FILTER_VALIDATE_INT);
-                    } else {
-                        $sanitize_post_field = sanitize_text_field($_POST[$field]);
-                    }
-                    $item->updateMeta($field, $sanitize_post_field);
-                    //update_post_meta($post_id, $field, $sanitize_post_field);
-                }
-            }
-            $item->save();
-        });
-    }
-
-    static function registerPostStatus($slug, $label, $icon = "info-outline")
-    {
-        register_post_status("oinb-$slug", array(
-            'label'                     => $label,
-            'label_count'               => _n_noop($label . ' <span class="count">(%s)</span>', $label . ' <span class="count">(%s)</span>', 'plugin-domain'),
-            'public'                    => true,
-            'post_type'                 => array(static::getPostType()), // Define one or more post types the status can be applied to.
-            'show_in_admin_all_list'    => true,
-            'show_in_admin_status_list' => true,
-            'show_in_metabox_dropdown'  => true,
-            'show_in_inline_dropdown'   => true,
-            'dashicon' => "dashicons-$icon"
-        ));
-    }
-
     function updateStatus($status)
     {
         wp_update_post(array(
-            'post_status' => "oinb-$status",
+            'post_status' => self::CPT_STATUS_PREFIX . $status,
             'ID' => $this->getId()
         ));
     }
 
-    function getPostStatus()
+    /**
+     * Gets the post status slug.
+     *
+     * @return string
+     */
+    function getStatusSlug()
     {
         return $this->getWpPost()->post_status;
     }
 
+    /**
+     * Gets the post status.
+     *
+     * @return mixed
+     */
     function getStatus()
     {
-        $status = $this->getPostStatus();
+        $status = $this->getStatusSlug();
         if (function_exists('wp_statuses_get')) {
             $status = call_user_func('wp_statuses_get', $status)->label;
         }
