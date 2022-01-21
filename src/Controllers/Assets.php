@@ -132,9 +132,15 @@ class Assets extends Singleton implements Controller
         add_action("wp_enqueue_scripts", [$this, "enqueueScripts"], 20);
         add_action("zeus_deploy", [$this, "updateAssets"]);
 
+        if (defined("ZEUS_ALWAYS_CHECK_CHUNKS") && ZEUS_ALWAYS_CHECK_CHUNKS === true) {
+            do_action("zeus_deploy");
+        }
+
         if (ZEUS_DISABLE_AUTODEPLOY === false && get_option(self::OPTION_LAST_VERSION) !== zeus()->getVersion()) {
             add_action("shutdown", function () {
-                do_action("zeus_deploy");
+                if (!did_action("zeus_deploy")) {
+                    do_action("zeus_deploy");
+                }
             });
         }
     }

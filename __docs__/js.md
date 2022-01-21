@@ -11,6 +11,17 @@ The first thing you need is a entry file. This file will `import` other files, a
 
 ## Example
 
+In localhost environments, add this line to `wp-config.php`:
+
+```php
+<?php
+define("ZEUS_ALWAYS_CHECK_CHUNKS", true);
+```
+
+This will make `Assets` controller update the file references in every load (but reduces performance).
+
+### Create the entry
+
 To create a script that will run only on Single Post page. First, we need to edit `lib/ts/entries.json`:
 
 ```json
@@ -40,6 +51,8 @@ import PostModel from './models/Post';
  > PostModel will not be covered in this example.
 
 Note that we used a variable `data`, which the value should be parsed by PHP. We will look into that later. After creating the file, we must build the project.
+
+### Building for development
 
  > All commands in this documentation should be executed in `lib` folder.
 
@@ -73,12 +86,15 @@ class Assets {
 }
 ```
 
-The file should now be loaded into the single post page. Now, lets add the variable required in our script:
+
+The file should now be loaded into the single post page.
+
+### Add variables to the script
+
+Use the `addVar` method to add the value you need. Add these lines iniside a function hooked into `wp_enqueue_scripts` hook:
 
 ```php
 <?php
-// it is recommended to call this inside `wp_enqueue_scripts` hook.
-
 // verification to avoid unnecessary calls.
 if (true === apply_filters("zeus_enqueues_single-post", false)) {
     // adds variable to script
@@ -88,6 +104,8 @@ if (true === apply_filters("zeus_enqueues_single-post", false)) {
 }
 ```
 
+ > The function running in `wp_enqueue_scripts` should have priority below 20.
+
 ## Building production
 
 To run a production build, run:
@@ -96,7 +114,7 @@ To run a production build, run:
 npm run build
 ```
 
-This type of build will create chunks, which will be any combination of imported files or `node_modules` you install. Zeus uses the `chunks-webpack-plugin`, which creates a list of scripts the file `includes/js/{$entry_name}-scripts.html`.
+This type of build will create chunks, which will be any combination of imported files or `node_modules` you install. Zeus uses the `chunks-webpack-plugin`, which creates a list of scripts in the file `includes/js/{$entry_name}-scripts.html`.
 
 ![chunks diagram example](./img/chunks.png)
 
