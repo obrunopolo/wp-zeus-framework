@@ -24,31 +24,33 @@ class Ticket extends Post {
 
     // this is where you define the post fields to be displayed
     // in the admin area. See the Form API documentation.
-    const POST_FIELDS = [
-        [
-            'meta_key' => 'amount',
-            'label' => __('Amount', 'zeus-framework'),
-        ],
-        [
-            'meta_key' => 'movie',
-            'label' => 'Movie',
-            'type' => 'select',
-            'options' => [
-                [
-                    'value' => '15',
-                    'label' => 'Star Wars - Episode I'
-                ],
-                [
-                    'value' => '32',
-                    'label' => 'Star Wars - Episode II'
-                ],
-                [
-                    'value' => '7',
-                    'label' => 'Star Wars - Episode III'
-                ],
+    static function getFields() {
+        return [
+            [
+                'meta_key' => 'amount',
+                'label' => __('Amount', 'zeus-framework'),
+            ],
+            [
+                'meta_key' => 'movie',
+                'label' => 'Movie',
+                'type' => 'select',
+                'options' => [
+                    [
+                        'value' => '15',
+                        'label' => __('Star Wars - Episode I', 'zeus-framework')
+                    ],
+                    [
+                        'value' => '32',
+                        'label' => __('Star Wars - Episode II', 'zeus-framework')
+                    ],
+                    [
+                        'value' => '7',
+                        'label' => __('Star Wars - Episode III', 'zeus-framework')
+                    ],
+                ]
             ]
-        ]
-    ];
+        ];
+    }
 
     // It is mandatory to implement this function
     // in every Post class.
@@ -56,7 +58,7 @@ class Ticket extends Post {
     {
         // Call wordpress post type registration function
         // See `register_post_type` documentation for list of arguments.
-        register_post_type([
+        register_post_type(self::POST_TYPE, [
             'public'          => true,
             'capability_type' => 'post',
             'rewrite'         => array('slug' => self::POST_TYPE),
@@ -162,6 +164,7 @@ $ticket = Ticket::create([
 There are two ways to read posts. To read a single post based on its ID, use the `get` static method:
 
 ```php
+<?php
 /** @var Ticket **/
 $ticket = Ticket::get($the_post_id);
 ```
@@ -169,6 +172,7 @@ $ticket = Ticket::get($the_post_id);
 We can also run a `WP_Query` and loop through the results:
 
 ```php
+<?php
 /** @var Ticket[] **/
 $tickets = Ticket::wpQuery($query_args);
 // Loop through the tickets

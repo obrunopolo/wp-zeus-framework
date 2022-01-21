@@ -134,4 +134,5 @@ Now you should see the greeting, if logged in.
 
 ## Continue creating
 
+ - [Create JavaScript](__docs__/js.md)
  - [Create and manage new post types](__docs__/post.md)

@@ -3,9 +3,8 @@
 namespace Zeus\Controllers;
 
 use Zeus\Models\Controller;
-use Masterminds\HTML5;
-use Zeus\App;
 use Zeus\Models\Singleton;
+use Masterminds\HTML5;
 
 class Assets extends Singleton implements Controller
 {
@@ -14,6 +13,9 @@ class Assets extends Singleton implements Controller
     const OPTION_LAST_VERSION = "zeus_assets_last_version";
 
     const ASSETS_PREFIX = "zeus-";
+
+    private $vars = [];
+
 
     /**
      * Reads one entry from JS files and adds the load parameters to the `$array` variable.
@@ -75,7 +77,7 @@ class Assets extends Singleton implements Controller
         }
 
         update_option(self::OPTION_JS_ENTRIES, $entries, true);
-        update_option(self::OPTION_LAST_VERSION, App::PLUGIN_VERSION, true);
+        update_option(self::OPTION_LAST_VERSION, zeus()->getVersion(), true);
     }
 
     public function enqueueScripts()
@@ -85,7 +87,7 @@ class Assets extends Singleton implements Controller
         $entries = apply_filters("zeus_get_js_entries", get_option(self::OPTION_JS_ENTRIES, []));
 
         foreach ($entries as $name => $data) {
-            if (true === apply_filters("zeus_enqueues_{$name}", true)) {
+            if (true === apply_filters("zeus_enqueues_{$name}", false)) {
                 foreach ($data["imports"] as $item) {
                     if (is_dev()) {
                         $path = $item;
@@ -94,9 +96,31 @@ class Assets extends Singleton implements Controller
                         [$path, $version] = explode("?ver=", $item);
                     }
                     wp_enqueue_script(self::ASSETS_PREFIX . $name, $path, [], $version);
+                    if (isset($this->variables[$name])) {
+                        foreach ($this->variables[$name] as $var => $value) {
+                            wp_localize_script(self::ASSETS_PREFIX . $name, $var, $value);
+                        }
+                    }
                 }
             }
         }
+    }
+
+
+    /**
+     * Adds a variable to be associated with an JavaScript file.
+     *
+     * @param string $entry_name The entry name, without file extension, that the variable will be added to.
+     * @param string $var_name The name of the variable to be accessible in JavaScript.
+     * @param array $value The value of the variable.
+     * @return void
+     */
+    public function addVar($entry_name, $var_name, $value)
+    {
+        if (!isset($this->variables[$entry_name])) {
+            $this->variables[$entry_name] = [];
+        }
+        $this->variables[$entry_name][$var_name] = $value;
     }
 
     public function run()
@@ -105,7 +129,7 @@ class Assets extends Singleton implements Controller
         // Determine when JS should be loaded.
         add_filter("zeus_enqueues_helloworld", "__return_true");
 
-        add_action("wp_enqueue_scripts", [$this, "enqueueScripts"]);
+        add_action("wp_enqueue_scripts", [$this, "enqueueScripts"], 20);
         add_action("zeus_deploy", [$this, "updateAssets"]);
 
         if (ZEUS_DISABLE_AUTODEPLOY === false && get_option(self::OPTION_LAST_VERSION) !== zeus()->getVersion()) {

@@ -49,6 +49,18 @@ abstract class Post
     }
 
     /**
+     * Register post type.
+     *
+     * This function should be implemented by child class and call
+     * `register_post_type` inside its body.
+     *
+     * Is executed during `zeus_register_post_types` hook.
+     *
+     * @return void
+     */
+    abstract static function registerPostType();
+
+    /**
      * Fetches a post from the database.
      *
      * @param int $id
@@ -89,17 +101,6 @@ abstract class Post
         return wp_delete_post($id, $force_delete);
     }
 
-    /**
-     * Register post type.
-     *
-     * This function should be implemented by child class and call
-     * `register_post_type` inside its body.
-     *
-     * Is executed during `zeus_register_post_types` hook.
-     *
-     * @return void
-     */
-    abstract static function registerPostType();
 
     /**
      * This function hooks to the post save on admin panel, and should be
@@ -144,17 +145,29 @@ abstract class Post
      *
      * @return FormField[]
      */
-    public static function getFields()
+    public static function getFormFields()
     {
         try {
-            $post_fields = new ReflectionClassConstant(static::class, 'POST_FIELDS');
+            $post_fields = static::getFields();
             return array_map(function ($post_field_args) {
                 return new FormField($post_field_args);
-            }, $post_fields->getValue());
+            }, $post_fields);
         } catch (\Throwable $th) {
             return [];
         }
     }
+
+    /**
+     * Gets the post type fields array. Override this method on child class to
+     * generate fields in admin area.
+     *
+     * @return array
+     */
+    public static function getFields()
+    {
+        return [];
+    }
+
     /**
      * Runs WP_Query for this post type. It does not require
      * to inform 'post_type' field, cleans the global object
@@ -218,11 +231,11 @@ abstract class Post
 
     /**
      * Registers meta box in admin area, to render
-     * the contents of `POST_FIELDS` constant as a
+     * the contents of `getFields` method as a
      * form.
      *
      * Should be called inside `registerPostType` method if
-     * `POST_FIELDS` is provided.
+     * `getFields` is provided.
      *
      * @return void
      */
@@ -250,7 +263,7 @@ abstract class Post
             /** @var string[] */
             $fields = array_map(function (FormField $field) {
                 return $field->getName();
-            }, static::getFields());
+            }, static::getFormFields());
 
             $item = static::get($post_id);
             foreach ($fields as $field) {
@@ -262,7 +275,6 @@ abstract class Post
                         $sanitize_post_field = sanitize_text_field($_POST[$field]);
                     }
                     $item->updateMeta($field, $sanitize_post_field);
-                    //update_post_meta($post_id, $field, $sanitize_post_field);
                 }
             }
             $item->save();
@@ -434,7 +446,7 @@ abstract class Post
      */
     function createForm()
     {
-        return new Form(self::getFields(), $this->getMeta());
+        return new Form(self::getFormFields(), $this->getMeta());
     }
 
 
