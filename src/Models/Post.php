@@ -93,6 +93,14 @@ abstract class Post
         return static::get(wp_insert_post($add));
     }
 
+    /**
+     * Deletes a post. Fails if the post does not exist or is from another post type.
+     *
+     * @param int $id The post ID to be deleted.
+     * @param bool $force_delete Optional. Whether to bypass Trash and force deletion. Default false.
+     * @return WP_Post|false|null
+     * @throws Error
+     */
     public static function delete($id, $force_delete = false)
     {
         if (get_post_type($id) !== static::getPostType()) {
@@ -243,15 +251,13 @@ abstract class Post
     {
         add_action('admin_menu', function () {
             remove_meta_box('postcustom', static::getPostType(), 'normal'); //removes custom fields for page
-            remove_meta_box('commentstatusdiv', static::getPostType(), 'normal'); //removes comments status for page
-            remove_meta_box('commentsdiv', static::getPostType(), 'normal'); //removes comments for page
-            remove_meta_box('authordiv', static::getPostType(), 'normal'); //removes author for page
         });
         add_action('add_meta_boxes', function () {
-            add_meta_box(static::getPostType() . '_add_fields', "Campos de " . static::getPostType(), function () {
+            $post_type = static::getPostType();
+            add_meta_box($post_type . '_post_fields_metabox', sprintf(esc_html__("%s fields", "zeus-framework"), $post_type), function () {
                 $item = static::get(get_the_ID());
                 $item->createForm()->render();
-            }, static::getPostType());
+            }, $post_type);
         });
         add_action('save_post_' . static::getPostType(), function ($post_id) {
             if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {

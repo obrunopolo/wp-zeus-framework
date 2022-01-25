@@ -11,7 +11,7 @@ The first thing you need is a entry file. This file will `import` other files, a
 
 ## Example
 
-In localhost environments, add this line to `wp-config.php`:
+In development environments, add this line to `wp-config.php`:
 
 ```php
 <?php
@@ -91,7 +91,7 @@ The file should now be loaded into the single post page.
 
 ### Add variables to the script
 
-Use the `addVar` method to add the value you need. Add these lines iniside a function hooked into `wp_enqueue_scripts` hook:
+Use the `addVar` method to add the value you need. Add these lines iniside a function hooked into `wp_enqueue_scripts`:
 
 ```php
 <?php
@@ -108,15 +108,22 @@ if (true === apply_filters("zeus_enqueues_single-post", false)) {
 
 ## Building production
 
-To run a production build, run:
+To get a production build, run:
 
 ```
 npm run build
 ```
 
-This type of build will create chunks, which will be any combination of imported files or `node_modules` you install. Zeus uses the `chunks-webpack-plugin`, which creates a list of scripts in the file `includes/js/{$entry_name}-scripts.html`.
-
 ![chunks diagram example](./img/chunks.png)
+
+This type of build will create chunks, which will be any combination of imported files or `node_modules` you install. Zeus uses the `chunks-webpack-plugin`, which generates the file `includes/js/{$entry_name}-scripts.html` with script tags, that could look like this:
+
+```html
+<script src="/../includes/js/single-post.bundle.js"></script>
+<script src="/../includes/js/235.bundle.js"></script>
+<script src="/../includes/js/710.bundle.js"></script>
+<!-- Any number of scripts will appear here, depending on the project size -->
+```
 
 For performance reasons, this file is only read when the plugin version changes. So, it is required to update the `PLUGIN_VERSION` constant in the main `App` class.
 

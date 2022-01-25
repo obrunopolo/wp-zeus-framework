@@ -1,8 +1,6 @@
 
 # WP Zeus Framework
 
-**:construction: Project status is: under construction. :construction:**
-
 The framework for WP plugin creators.
 
 Features:
@@ -24,8 +22,8 @@ Features:
  - [x] Project startup documentation
  - [ ] i18n support
  - [x] Developing guidelines documentation
- - [ ] Project deploy documentation
- - [ ] JavaScript/TypeScript development documentation
+ - [ ] Production deploy documentation
+ - [x] JavaScript/TypeScript development documentation
  - [ ] Composer usage documentation
  - [x] Custom post types implementation + Documentation
  - [ ] `wp-json` API implementation + Documentation
@@ -134,5 +132,6 @@ Now you should see the greeting, if logged in.
 
 ## Continue creating
 
- - [Create JavaScript](__docs__/js.md)
  - [Create and manage new post types](__docs__/post.md)
+ - [Create JavaScript](__docs__/js.md)
+ - [Create with React](__docs__/react.md)

@@ -17,11 +17,11 @@ if (!defined("ZEUS_ENV")) {
     define("ZEUS_ENV", "development");
 }
 
-if (!defined("ZEUS_DISABLE_AUTODEPLOY")) {
+if (!defined("ZEUS_ENABLE_AUTODEPLOY")) {
     /**
      * If plugin should deploy itself when the version changes.
      * Setting to false does not build the project, but updates
      * the generated assets references.
      */
-    define("ZEUS_DISABLE_AUTODEPLOY", false);
+    define("ZEUS_ENABLE_AUTODEPLOY", true);
 }

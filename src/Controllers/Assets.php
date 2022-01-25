@@ -14,7 +14,7 @@ class Assets extends Singleton implements Controller
 
     const ASSETS_PREFIX = "zeus-";
 
-    private $vars = [];
+    private $variables = [];
 
 
     /**
@@ -136,7 +136,7 @@ class Assets extends Singleton implements Controller
             do_action("zeus_deploy");
         }
 
-        if (ZEUS_DISABLE_AUTODEPLOY === false && get_option(self::OPTION_LAST_VERSION) !== zeus()->getVersion()) {
+        if (ZEUS_ENABLE_AUTODEPLOY === true && get_option(self::OPTION_LAST_VERSION) !== zeus()->getVersion()) {
             add_action("shutdown", function () {
                 if (!did_action("zeus_deploy")) {
                     do_action("zeus_deploy");
