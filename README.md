@@ -26,8 +26,8 @@ Features:
  - [x] JavaScript/TypeScript development documentation
  - [ ] Composer usage documentation
  - [x] Custom post types implementation + Documentation
- - [ ] `wp-json` API implementation + Documentation
- - [ ] React usage documentation
+ - [x] `wp-json` API implementation + Documentation
+ - [x] React usage documentation
  - [ ] Sass (.scss) support + documentation
 
 ## Quick start
@@ -132,6 +132,7 @@ Now you should see the greeting, if logged in.
 
 ## Continue creating
 
- - [Create and manage new post types](__docs__/post.md)
  - [Create JavaScript](__docs__/js.md)
  - [Create with React](__docs__/react.md)
+ - [Create and manage new post types](__docs__/post.md)
+ - [Create REST API endpoints](__docs__/endpoints.md)

@@ -31,7 +31,7 @@ abstract class Singleton
     /**
      * Get Instance
      *
-     * @return Singleton
+     * @return static
      */
     public static function getInstance()
     {

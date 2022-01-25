@@ -3,6 +3,7 @@
 namespace Zeus;
 
 use Zeus\Controllers\Assets;
+use Zeus\Models\Endpoint;
 use Zeus\Models\Singleton;
 
 class App extends Singleton
@@ -46,6 +47,24 @@ class App extends Singleton
         }
     }
 
+    public function registerRestEndpoints()
+    {
+        // Add endpoint classes to this array
+        $endpoints = [
+            "Examples\\Post"
+        ];
+
+        // Change this to match the root namespace where endpoints are created
+        $namespace = "\\Zeus\\Controllers\\Api";
+
+        foreach ($endpoints as $endpoint) {
+            $endpoint = call_user_func([$namespace . "\\" . $endpoint, 'getInstance']);
+            if ($endpoint instanceof Endpoint) {
+                $endpoint->registerEndpoint();
+            }
+        }
+    }
+
     public function run()
     {
         // prevent re-running
@@ -60,6 +79,7 @@ class App extends Singleton
         // Create hooks here
         add_action('init', [$this, 'init']);
         add_action('zeus_register_post_types', [$this, 'registerPostTypes']);
+        add_action('rest_api_init', [$this, 'registerRestEndpoints']);
 
         $this->run_complete = true;
     }
