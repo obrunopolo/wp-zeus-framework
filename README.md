@@ -5,10 +5,9 @@ The framework for WP plugin creators.
 
 Features:
 
- * PSR-4.
- * Extend your code using `composer` to install and manage PHP dependencies.
- * Use TypeScript or JavaScript to create front end scripts.
- * Use `npm` to install packages and extend front end functionalities.
+ * PSR-4 - No more annoying `require` frenzy.
+ * Use `composer` to install and manage PHP dependencies.
+ * Use TypeScript or JavaScript to create front end scripts, and `npm` to install packages and extend functionalities.
  * Enjoy `webpack` optimized build for production.
 
 ## Pre requisites
@@ -20,15 +19,18 @@ Features:
 ## Task list
 
  - [x] Project startup documentation
- - [ ] i18n support
  - [x] Developing guidelines documentation
- - [ ] Production deploy documentation
  - [x] JavaScript/TypeScript development documentation
- - [ ] Composer usage documentation
  - [x] Custom post types implementation + Documentation
  - [x] `wp-json` API implementation + Documentation
  - [x] React usage documentation
  - [ ] Sass (.scss) support + documentation
+ - [ ] `wp-config.php` setup
+ - [ ] Production deploy documentation
+ - [ ] Composer usage documentation
+ - [ ] i18n support
+ - [ ] Hooks documentation
+
 
 ## Quick start
 

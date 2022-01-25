@@ -7,7 +7,7 @@ Zeus takes care of all these issues, by setting up a NPM project inside `lib` fo
 
 ## How it works
 
-The first thing you need is a entry file. This file will `import` other files, and you may have any number of entry files. All entry files must be listed in `lib/ts/entries.json`. This file is used by `webpack` and the `Assets` controller to create bundles and define which files should be loaded in each page.
+The first thing you need is a entry file. This file will `import` other files, and you may have any number of entry files. All entry files must be listed in `includes/js/entries.json`. This file is used by `webpack` and the `Assets` controller to create bundles and define which files should be loaded in each page.
 
 ## Example
 
@@ -22,7 +22,7 @@ This will make `Assets` controller update the file references in every load (but
 
 ### Create the entry
 
-To create a script that will run only on Single Post page. First, we need to edit `lib/ts/entries.json`:
+To create a script that will run only on Single Post page. First, we need to edit `includes/js/entries.json`:
 
 ```json
 {
@@ -66,7 +66,7 @@ If you will develop continuously, you can use the `start` script to make a build
 npm run start
 ```
 
-A `single-post.bundle.js` file should be created in the folder `includes/js`. At this point, the file will not be loaded. We need to tell `Assets` controller to load the file in the single post page, by using the filter `zeus_enqueues_{$entry_name}`:
+A `single-post.bundle.js` file should be created in the folder `includes/js`. At this point, the file will not be loaded. We need to tell `Assets` controller to load the file in the single post page, by using the filter `zeus_enqueues_js_{$entry_name}`:
 
  - `src/Controllers/Assets.php`
 

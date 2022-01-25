@@ -106,7 +106,7 @@ class App {
 
 Things to keep in mind:
 
- - An `Endpoint` class may or may not implement the methods `get`, `post`, `put`, `patch` and `delete`.
+ - An `Endpoint` child class may or may not implement the methods `get`, `post`, `put`, `patch` and `delete`.
  - If a request is made to the specified route using a method that was not implemented, then 404 is returned.
  - The permission callback in the example returns true. This should only be used in special cases. Always check if the user can access the requested resource.
  - If you do not supply the permission callback, it will return `false` by default and 403 (Forbidden) status is returned.

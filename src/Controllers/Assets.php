@@ -10,6 +10,7 @@ class Assets extends Singleton implements Controller
 {
 
     const OPTION_JS_ENTRIES = "zeus_js_entries";
+    const OPTION_CSS_ENTRIES = "zeus_css_entries";
     const OPTION_LAST_VERSION = "zeus_assets_last_version";
 
     const ASSETS_PREFIX = "zeus-";
@@ -24,7 +25,7 @@ class Assets extends Singleton implements Controller
      * @param mixed $array The array the entry should be added to.
      * @return void
      */
-    private function readFileDependencies($filename, &$array)
+    private function readJsDependencies($filename, &$array)
     {
         [$file, $_extension] = explode(".", $filename);
         $array[$file] = [
@@ -60,6 +61,14 @@ class Assets extends Singleton implements Controller
         }
     }
 
+    private function readCssToUrl($filename, &$array)
+    {
+        [$file, $_extension] = explode(".", $filename);
+        $content = file_get_contents(ZEUS_ABSPATH . "/includes/css/" . $file . ".css");
+        $version = md5($content);
+        $array[$file] = ZEUS_URL . "/includes/css/" . $file . ".css?ver=" . $version;
+    }
+
     /**
      * Updates the file references for JavaScript built with Webpack.
      *
@@ -69,14 +78,21 @@ class Assets extends Singleton implements Controller
      */
     public function updateAssets()
     {
-        $files = json_decode(file_get_contents(ZEUS_ABSPATH . "/lib/ts/entries.json"));
+        $js = json_decode(file_get_contents(ZEUS_ABSPATH . "/includes/js/entries.json"));
+        $css = json_decode(file_get_contents(ZEUS_ABSPATH . "/includes/css/entries.json"));
 
-        $entries = [];
-        foreach ($files->entries as $entry) {
-            $this->readFileDependencies($entry, $entries);
+        $js_entries = [];
+        $css_entries = [];
+        foreach ($js->entries as $entry) {
+            $this->readJsDependencies($entry, $js_entries);
         }
 
-        update_option(self::OPTION_JS_ENTRIES, $entries, true);
+        foreach ($css->entries as $entry) {
+            $this->readCssToUrl($entry, $css_entries);
+        }
+
+        update_option(self::OPTION_JS_ENTRIES, $js_entries, true);
+        update_option(self::OPTION_CSS_ENTRIES, $css_entries, true);
         update_option(self::OPTION_LAST_VERSION, zeus()->getVersion(), true);
     }
 
@@ -84,10 +100,10 @@ class Assets extends Singleton implements Controller
     {
 
         // Enqueues JavaScript built with Webpack
-        $entries = apply_filters("zeus_get_js_entries", get_option(self::OPTION_JS_ENTRIES, []));
+        $js = apply_filters("zeus_get_js_entries", get_option(self::OPTION_JS_ENTRIES, []));
 
-        foreach ($entries as $name => $data) {
-            if (true === apply_filters("zeus_enqueues_{$name}", false)) {
+        foreach ($js as $name => $data) {
+            if (true === apply_filters("zeus_enqueues_js_{$name}", false)) {
                 foreach ($data["imports"] as $item) {
                     if (is_dev()) {
                         $path = $item;
@@ -102,6 +118,21 @@ class Assets extends Singleton implements Controller
                         }
                     }
                 }
+            }
+        }
+
+        // Enqueues css built with node-sass
+        $css = apply_filters("zeus_get_css_entries", get_option(self::OPTION_CSS_ENTRIES, []));
+
+        foreach ($css as $name => $src) {
+            if (true === apply_filters("zeus_enqueues_css_{$name}", false)) {
+                if (is_dev()) {
+                    $path = $src;
+                    $version = false;
+                } else {
+                    [$path, $version] = explode("?ver=", $src);
+                }
+                wp_enqueue_style(self::ASSETS_PREFIX . $name, $path, [], $version);
             }
         }
     }
@@ -126,10 +157,14 @@ class Assets extends Singleton implements Controller
     public function run()
     {
 
-        // Determine when JS should be loaded.
-        add_filter("zeus_enqueues_helloworld", "__return_true");
+        // Determine when assets should be loaded.
+        add_filter("zeus_enqueues_js_helloworld", "__return_true");
+        add_filter("zeus_enqueues_css_helloworld", "__return_true");
 
+        // Enqueue files
         add_action("wp_enqueue_scripts", [$this, "enqueueScripts"], 20);
+
+        // Renew file references
         add_action("zeus_deploy", [$this, "updateAssets"]);
 
         if (defined("ZEUS_ALWAYS_CHECK_CHUNKS") && ZEUS_ALWAYS_CHECK_CHUNKS === true) {
