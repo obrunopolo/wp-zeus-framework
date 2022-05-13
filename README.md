@@ -1,6 +1,8 @@
 
 # WP Zeus Framework
 
+**Some stuff have been changed, and I got no time to update docs. Updates coming soon.**
+
 The framework for WP plugin creators.
 
 Features:
@@ -75,8 +77,8 @@ This could be achieved if we had a `User` controller, using the filter `the_cont
 
 namespace Zeus\Controllers;
 
-use Zeus\Models\Extensions\Controller;
-use Zeus\Models\Extensions\Singleton;
+use Zeus\Framework\Contracts\Controller;
+use Zeus\Framework\Contracts\Singleton;
 
 class User extends Singleton implements Controller
 {

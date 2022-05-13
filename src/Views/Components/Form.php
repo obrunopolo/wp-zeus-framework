@@ -2,7 +2,7 @@
 
 namespace Zeus\Views\Components;
 
-use Zeus\Models\Component;
+use Zeus\Framework\Contracts\Component;
 
 class Form extends Component
 {

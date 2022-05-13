@@ -12,9 +12,9 @@ To register a new post type, you should create a class that extends `Zeus\Models
 ```php
 <?php
 
-namespace Zeus\Models\Post;
+namespace Zeus\Framework\Contracts\Post;
 
-use Zeus\Models\Post;
+use Zeus\Framework\Contracts\Post;
 
 class Ticket extends Post {
 
@@ -143,7 +143,7 @@ To create a post, we need to call the static method `create`:
 ```php
 <?php
 
-use Zeus\Models\Post\Ticket;
+use Zeus\Framework\Contracts\Post\Ticket;
 
 /** @var Ticket **/
 $ticket = Ticket::create([

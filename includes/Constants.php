@@ -25,3 +25,11 @@ if (!defined("ZEUS_ENABLE_AUTODEPLOY")) {
      */
     define("ZEUS_ENABLE_AUTODEPLOY", true);
 }
+
+
+if (!defined("ZEUS_ALWAYS_CHECK_CHUNKS")) {
+    /**
+     * If plugin should always deploy itself. Useful for developing environment.
+     */
+    define("ZEUS_ALWAYS_CHECK_CHUNKS", false);
+}

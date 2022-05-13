@@ -1,6 +1,6 @@
 <?php
 
-namespace Zeus\Models;
+namespace Zeus\Framework\Contracts;
 
 use ReflectionClassConstant;
 use ReflectionMethod;
@@ -18,43 +18,19 @@ use WP_REST_Response;
 abstract class Endpoint extends Singleton
 {
 
-    const NAMESPACE = "zeus/v1";
-
-    /**
-     * Gets the route string for this endpoint.
-     *
-     * @return string|false
-     */
-    public function getRoute()
-    {
-        try {
-            $constant = new ReflectionClassConstant($this, 'ROUTE');
-            return $constant->getValue();
-        } catch (\Throwable $th) {
-            // Url constant does not exist.
-            return false;
-        }
-    }
-
     /**
      * Registers the endpoint.
      *
      * @return void
      */
-    public function registerEndpoint()
+    public function registerEndpoint($namespace, $route)
     {
         $methods = ['get', 'post', 'put', 'delete', 'patch'];
-
-        $route = $this->getRoute();
-
-        if ($route === false) {
-            return;
-        }
 
         foreach ($methods as $method) {
             $reflector = new ReflectionMethod($this, $method);
             if (static::class === $reflector->getDeclaringClass()->getName()) {
-                register_rest_route(static::NAMESPACE, $route, array_merge($this->getAdditionalRegistrationArgs(), [
+                register_rest_route($namespace, $route, array_merge($this->getAdditionalRegistrationArgs(), [
                     'methods' => strtoupper($method),
                     'callback' => [$this, $method],
                     'permission_callback' => [$this, 'permissionCallback']
@@ -140,7 +116,7 @@ abstract class Endpoint extends Singleton
         return false;
     }
 
-    public function createResponse($data, $status_code = 200)
+    public function response($data, $status_code = 200)
     {
         $response = new WP_REST_Response($data, $status_code);
         return $response;

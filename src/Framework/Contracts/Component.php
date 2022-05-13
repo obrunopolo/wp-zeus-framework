@@ -1,6 +1,6 @@
 <?php
 
-namespace Zeus\Models;
+namespace Zeus\Framework\Contracts;
 
 abstract class Component
 {

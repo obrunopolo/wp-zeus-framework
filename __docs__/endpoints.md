@@ -9,7 +9,7 @@ To create a REST API endpoint, add a new class to the project:
 
 namespace Zeus\Controllers\Api\Examples;
 
-use Zeus\Models\Endpoint;
+use Zeus\Framework\Contracts\Endpoint;
 use WP_REST_Request;
 
 class Post extends Endpoint
