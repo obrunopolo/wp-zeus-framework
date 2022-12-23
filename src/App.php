@@ -13,18 +13,9 @@ class App extends Singleton
     const PLUGIN_NAME = "zeus-framework";
     const PLUGIN_VERSION = "1.0.0";
 
-    /** @var Assets */
-    public $assets;
-
     public function getVersion()
     {
         return self::PLUGIN_VERSION;
-    }
-
-
-    public function init()
-    {
-        do_action('zeus_register_post_types');
     }
 
     public function registerPostTypes()
@@ -49,15 +40,6 @@ class App extends Singleton
 
     public function run()
     {
-
-        // Instantiate controllers here
-        $this->assets = Assets::getInstance();
-
-        // initialize routes
-        Routes::getInstance();
-
-        // Create hooks here
-        add_action('init', [$this, 'init']);
-        add_action('zeus_register_post_types', [$this, 'registerPostTypes']);
+        add_action('init', [$this, 'registerPostTypes']);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Zeus\Views\Components;
+namespace Zeus\Framework\Components;
 
 use Zeus\Framework\Contracts\Component;
 

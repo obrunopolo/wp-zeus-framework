@@ -6,8 +6,8 @@ use Error;
 use ReflectionClassConstant;
 use WP_Post;
 use WP_Query;
-use Zeus\Views\Components\Form;
-use Zeus\Views\Components\FormField;
+use Zeus\Framework\Components\Form;
+use Zeus\Framework\Components\FormField;
 
 abstract class Post
 {
